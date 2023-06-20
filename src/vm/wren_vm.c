@@ -199,6 +199,9 @@ void wrenCollectGarbage(WrenVM* vm)
   // a configured percentage of the current allocation.
   vm->nextGC = vm->bytesAllocated + ((vm->bytesAllocated * vm->config.heapGrowthPercent) / 100);
   if (vm->nextGC < vm->config.minHeapSize) vm->nextGC = vm->config.minHeapSize;
+  if (vm->nextGC > vm->config.max_allocated_size) {
+    vm->nextGC = vm->config.max_allocated_size;
+  }
 
 #if WREN_DEBUG_TRACE_MEMORY || WREN_DEBUG_TRACE_GC
   double elapsed = ((double)clock() / CLOCKS_PER_SEC) - startTime;
@@ -235,6 +238,11 @@ void* wrenReallocate(WrenVM* vm, void* memory, size_t oldSize, size_t newSize)
 #else
   if (newSize > 0 && vm->bytesAllocated > vm->nextGC) wrenCollectGarbage(vm);
 #endif
+
+  if (vm->bytesAllocated > vm->config.max_allocated_size) {
+    vm->bytesAllocated -= newSize - oldSize; // Undo the calculation done above
+    return NULL; // This WILL cause a SIGSEGV
+  }
 
   return vm->config.reallocateFn(memory, newSize, vm->config.userData);
 }
