@@ -52,7 +52,7 @@ static void runTestVM(WrenVM* vm, WrenConfiguration* configuration,
   WrenVM* otherVM = wrenNewVM(configuration);
 
   // We should be able to execute code.
-  WrenInterpretResult result = wrenInterpret(otherVM, "main", source);
+  WrenInterpretResult result = wrenInterpret(otherVM, "main", source, 0);
   if (result != WREN_RESULT_SUCCESS)
   {
     wrenSetSlotString(vm, 0, "error");

@@ -14,13 +14,13 @@ int resetStackAfterCallAbortRunTests(WrenVM* vm)
 
   wrenEnsureSlots(vm, 1);
   wrenSetSlotHandle(vm, 0, testClass);
-  wrenCall(vm, abortFiber);
+  wrenCall(vm, abortFiber, 0);
 
   wrenEnsureSlots(vm, 3);
   wrenSetSlotHandle(vm, 0, testClass);
   wrenSetSlotDouble(vm, 1, 1.0);
   wrenSetSlotDouble(vm, 2, 2.0);
-  wrenCall(vm, afterAbort);
+  wrenCall(vm, afterAbort, 0);
 
   wrenReleaseHandle(vm, testClass);
   wrenReleaseHandle(vm, abortFiber);

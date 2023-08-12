@@ -34,7 +34,7 @@ int callCallsForeignRunTests(WrenVM* vm)
   wrenSetSlotString(vm, 1, "parameter");
 
   printf("slots before %d\n", wrenGetSlotCount(vm));
-  wrenCall(vm, call);
+  wrenCall(vm, call, 0);
 
   // We should have a single slot count for the return.
   printf("slots after %d\n", wrenGetSlotCount(vm));

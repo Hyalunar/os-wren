@@ -30,7 +30,7 @@ static void call(WrenVM* vm)
   wrenInitConfiguration(&config);
   WrenVM* otherVM = wrenNewVM(&config);
 
-  wrenInterpret(otherVM, "main", testScript);
+  wrenInterpret(otherVM, "main", testScript, 0);
 
   WrenHandle* method = wrenMakeCallHandle(otherVM, "method(_,_,_,_)");
 
@@ -50,7 +50,7 @@ static void call(WrenVM* vm)
     wrenSetSlotDouble(otherVM, 3, 3.0);
     wrenSetSlotDouble(otherVM, 4, 4.0);
 
-    wrenCall(otherVM, method);
+    wrenCall(otherVM, method, 0);
 
     result += wrenGetSlotDouble(otherVM, 0);
   }

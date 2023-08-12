@@ -41,7 +41,7 @@ int main()
   const char* module = "main";
   const char* script = "System.print(\"I am running in a VM!\")";
 
-  WrenInterpretResult result = wrenInterpret(vm, module, script);
+  WrenInterpretResult result = wrenInterpret(vm, module, script, 30);
 
   switch (result)
   {
@@ -51,6 +51,9 @@ int main()
       { printf("Runtime Error!\n"); } break;
     case WREN_RESULT_SUCCESS:
       { printf("Success!\n"); } break;
+    case WREN_RESULT_MAX_OPERATIONS:
+      printf("Max operations reached!\n");
+      break;
   }
 
   wrenFreeVM(vm);

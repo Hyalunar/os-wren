@@ -31,13 +31,13 @@ int resetStackAfterForeignConstructRunTests(WrenVM* vm)
 
   wrenEnsureSlots(vm, 1);
   wrenSetSlotHandle(vm, 0, testClass);
-  wrenCall(vm, callConstruct);
+  wrenCall(vm, callConstruct, 0);
 
   wrenEnsureSlots(vm, 3);
   wrenSetSlotHandle(vm, 0, testClass);
   wrenSetSlotDouble(vm, 1, 1.0);
   wrenSetSlotDouble(vm, 2, 2.0);
-  wrenCall(vm, afterConstruct);
+  wrenCall(vm, afterConstruct, 0);
 
   wrenReleaseHandle(vm, testClass);
   wrenReleaseHandle(vm, callConstruct);

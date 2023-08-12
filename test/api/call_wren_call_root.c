@@ -15,7 +15,7 @@ int callWrenCallRootRunTests(WrenVM* vm)
 
   wrenEnsureSlots(vm, 1);
   wrenSetSlotHandle(vm, 0, testClass);
-  WrenInterpretResult result = wrenCall(vm, run);
+  WrenInterpretResult result = wrenCall(vm, run, 0);
   if (result == WREN_RESULT_RUNTIME_ERROR)
   {
     exitCode = WREN_EX_SOFTWARE;

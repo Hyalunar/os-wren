@@ -453,7 +453,7 @@
 
     pathRemoveExtension(module);
 
-    WrenInterpretResult result = wrenInterpret(vm, module->chars, source);
+    WrenInterpretResult result = wrenInterpret(vm, module->chars, source, 0);
 
     pathFree(module);
     free(source);

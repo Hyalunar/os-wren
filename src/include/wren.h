@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 // The Wren semantic version number components.
 #define WREN_VERSION_MAJOR 0
@@ -275,7 +276,8 @@ typedef enum
 {
   WREN_RESULT_SUCCESS,
   WREN_RESULT_COMPILE_ERROR,
-  WREN_RESULT_RUNTIME_ERROR
+  WREN_RESULT_RUNTIME_ERROR,
+  WREN_RESULT_MAX_OPERATIONS
 } WrenInterpretResult;
 
 // The type of an object stored in a slot.
@@ -320,9 +322,9 @@ WREN_API void wrenFreeVM(WrenVM* vm);
 WREN_API void wrenCollectGarbage(WrenVM* vm);
 
 // Runs [source], a string of Wren source code in a new fiber in [vm] in the
-// context of resolved [module].
+// context of resolved [module]. Executes at most [operations] opcodes, if operations is zero, no limit is used
 WREN_API WrenInterpretResult wrenInterpret(WrenVM* vm, const char* module,
-                                  const char* source);
+                                  const char* source, uint64_t operations);
 
 // Creates a handle that can be used to invoke a method with [signature] on
 // using a receiver and arguments that are set up on the stack.
@@ -343,8 +345,10 @@ WREN_API WrenHandle* wrenMakeCallHandle(WrenVM* vm, const char* signature);
 // error if the number of arguments provided does not match the method's
 // signature.
 //
+// Executes at most [operations] opcodes, if operations equals zero, no limit is set
+//
 // After this returns, you can access the return value from slot 0 on the stack.
-WREN_API WrenInterpretResult wrenCall(WrenVM* vm, WrenHandle* method);
+WREN_API WrenInterpretResult wrenCall(WrenVM* vm, WrenHandle* method, uint64_t operations);
 
 // Releases the reference stored in [handle]. After calling this, [handle] can
 // no longer be used.

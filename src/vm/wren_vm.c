@@ -823,7 +823,7 @@ inline static bool checkArity(WrenVM* vm, Value value, int numArgs)
 
 // The main bytecode interpreter loop. This is where the magic happens. It is
 // also, as you can imagine, highly performance critical.
-static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
+static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber, register uint64_t operations)
 {
   // Remember the current fiber so we can find it if a GC happens.
   vm->fiber = fiber;
@@ -887,6 +887,17 @@ static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
     #define DEBUG_TRACE_INSTRUCTIONS() do { } while (false)
   #endif
 
+  #define CHECK_OPERATIONS()                                                   \
+      do                                                                       \
+      {                                                                        \
+        if (operations != 0) {                                                 \
+          if (--operations == 0) {                                             \
+            STORE_FRAME();                                                     \
+            return WREN_RESULT_MAX_OPERATIONS;                                 \
+          }                                                                    \
+        }                                                                      \
+      } while (false)
+
   #if WREN_COMPUTED_GOTO
 
   static void* dispatchTable[] = {
@@ -902,6 +913,7 @@ static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
       do                                                                       \
       {                                                                        \
         DEBUG_TRACE_INSTRUCTIONS();                                            \
+        CHECK_OPERATIONS();                                                    \
         goto *dispatchTable[instruction = (Code)READ_BYTE()];                  \
       } while (false)
 
@@ -910,6 +922,7 @@ static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
   #define INTERPRET_LOOP                                                       \
       loop:                                                                    \
         DEBUG_TRACE_INSTRUCTIONS();                                            \
+        CHECK_OPERATIONS();                                                    \
         switch (instruction = (Code)READ_BYTE())
 
   #define CASE_CODE(name)  case CODE_##name
@@ -1439,7 +1452,7 @@ WrenHandle* wrenMakeCallHandle(WrenVM* vm, const char* signature)
   return value;
 }
 
-WrenInterpretResult wrenCall(WrenVM* vm, WrenHandle* method)
+WrenInterpretResult wrenCall(WrenVM* vm, WrenHandle* method, uint64_t operations)
 {
   ASSERT(method != NULL, "Method cannot be NULL.");
   ASSERT(IS_CLOSURE(method->value), "Method must be a method handle.");
@@ -1463,7 +1476,7 @@ WrenInterpretResult wrenCall(WrenVM* vm, WrenHandle* method)
   vm->fiber->stackTop = &vm->fiber->stack[closure->fn->maxSlots];
   
   wrenCallFunction(vm, vm->fiber, closure, 0);
-  WrenInterpretResult result = runInterpreter(vm, vm->fiber);
+  WrenInterpretResult result = runInterpreter(vm, vm->fiber, operations);
   
   // If the call didn't abort, then set up the API stack to point to the
   // beginning of the stack so the host can access the call's return value.
@@ -1511,7 +1524,7 @@ void wrenReleaseHandle(WrenVM* vm, WrenHandle* handle)
 }
 
 WrenInterpretResult wrenInterpret(WrenVM* vm, const char* module,
-                                  const char* source)
+                                  const char* source, uint64_t operations)
 {
   ObjClosure* closure = wrenCompileSource(vm, module, source, false, true);
   if (closure == NULL) return WREN_RESULT_COMPILE_ERROR;
@@ -1521,7 +1534,7 @@ WrenInterpretResult wrenInterpret(WrenVM* vm, const char* module,
   wrenPopRoot(vm); // closure.
   vm->apiStack = NULL;
 
-  return runInterpreter(vm, fiber);
+  return runInterpreter(vm, fiber, operations);
 }
 
 ObjClosure* wrenCompileSource(WrenVM* vm, const char* module, const char* source,
