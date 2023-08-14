@@ -39,7 +39,33 @@ int main()
   WrenVM* vm = wrenNewVM(&config);
 
   const char* module = "main";
-  const char* script = "System.print(\"I am running in a VM!\")";
+  const char* script = "class Skynet {\n"
+"  static makeFiber(num, size, div) {\n"
+"    return Fiber.new {\n"
+"      if (size == 1) {\n"
+"        Fiber.yield(num)\n"
+"      } else {\n"
+"        var fibers = []\n"
+"        for (i in 0...div) {\n"
+"          var subNum = num + i * (size / div)\n"
+"          fibers.add(makeFiber(subNum, size / div, div))\n"
+"        }\n"
+"\n"
+"        var sum = 0\n"
+"        for (task in fibers) {\n"
+"          sum = sum + task.call()\n"
+"        }\n"
+"        Fiber.yield(sum)\n"
+"      }\n"
+"    }\n"
+"  }\n"
+"}\n"
+"\n"
+"var start = System.clock\n"
+"var result = Skynet.makeFiber(0, 1000000, 10).call()\n"
+"var end = System.clock\n"
+"System.print(\"Result: %(result) in %(end - start) s\")\n";
+
 
   WrenInterpretResult result = wrenInterpret(vm, module, script);
 
@@ -51,6 +77,9 @@ int main()
       { printf("Runtime Error!\n"); } break;
     case WREN_RESULT_SUCCESS:
       { printf("Success!\n"); } break;
+    case WREN_RESULT_MAX_OPERATIONS:
+      printf("Max operations reached!\n");
+      break;
   }
 
   wrenFreeVM(vm);
