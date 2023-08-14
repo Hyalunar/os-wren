@@ -6,6 +6,8 @@
 #include "wren_value.h"
 #include "wren_utils.h"
 
+#include <time.h>
+
 // The maximum number of temporary objects that can be made visible to the GC
 // at one time.
 #define WREN_MAX_TEMP_ROOTS 8

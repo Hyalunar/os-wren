@@ -4,6 +4,9 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
+
+#include <time.h>
 
 // The Wren semantic version number components.
 #define WREN_VERSION_MAJOR 0
@@ -266,6 +269,15 @@ typedef struct
   // If zero, defaults to 50.
   int heapGrowthPercent;
 
+  // Maximum opcode count executed by the interpreter in one go
+  uint64_t max_operations;
+
+  // timeout after which execution will be canceled
+  time_t seconds_timeout;
+
+  // Maximum amount of memory allocated by the VM
+  size_t max_allocated_size;
+
   // User-defined data associated with the VM.
   void* userData;
 
@@ -275,7 +287,9 @@ typedef enum
 {
   WREN_RESULT_SUCCESS,
   WREN_RESULT_COMPILE_ERROR,
-  WREN_RESULT_RUNTIME_ERROR
+  WREN_RESULT_RUNTIME_ERROR,
+  WREN_RESULT_MAX_OPERATIONS,
+  WREN_RESULT_TIMEOUT
 } WrenInterpretResult;
 
 // The type of an object stored in a slot.
@@ -320,7 +334,7 @@ WREN_API void wrenFreeVM(WrenVM* vm);
 WREN_API void wrenCollectGarbage(WrenVM* vm);
 
 // Runs [source], a string of Wren source code in a new fiber in [vm] in the
-// context of resolved [module].
+// context of resolved [module]. Executes at most [operations] opcodes, if operations is zero, no limit is used
 WREN_API WrenInterpretResult wrenInterpret(WrenVM* vm, const char* module,
                                   const char* source);
 

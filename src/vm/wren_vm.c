@@ -43,17 +43,20 @@ int wrenGetVersionNumber()
 
 void wrenInitConfiguration(WrenConfiguration* config)
 {
-  config->reallocateFn = defaultReallocate;
-  config->resolveModuleFn = NULL;
-  config->loadModuleFn = NULL;
+  config->reallocateFn        = defaultReallocate;
+  config->resolveModuleFn     = NULL;
+  config->loadModuleFn        = NULL;
   config->bindForeignMethodFn = NULL;
-  config->bindForeignClassFn = NULL;
-  config->writeFn = NULL;
-  config->errorFn = NULL;
-  config->initialHeapSize = 1024 * 1024 * 10;
-  config->minHeapSize = 1024 * 1024;
-  config->heapGrowthPercent = 50;
-  config->userData = NULL;
+  config->bindForeignClassFn  = NULL;
+  config->writeFn             = NULL;
+  config->errorFn             = NULL;
+  config->initialHeapSize     = 1024 * 1024 * 10;
+  config->minHeapSize         = 1024 * 1024;
+  config->heapGrowthPercent   = 50;
+  config->max_operations      = 0; // No limit
+  config->seconds_timeout     = 0; // No timeout
+  config->max_allocated_size  = 0; // No maximum
+  config->userData            = NULL;
 }
 
 WrenVM* wrenNewVM(WrenConfiguration* config)
@@ -836,6 +839,9 @@ static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
   register Value* stackStart;
   register uint8_t* ip;
   register ObjFn* fn;
+  register uint64_t operations = vm->config.max_operations;
+  register time_t timeout    = vm->config.seconds_timeout;
+  register time_t start_time   = time(NULL);
 
   // These macros are designed to only be invoked within this function.
   #define PUSH(value)  (*fiber->stackTop++ = value)
@@ -887,6 +893,26 @@ static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
     #define DEBUG_TRACE_INSTRUCTIONS() do { } while (false)
   #endif
 
+  #define CHECK_OPERATIONS()                                                   \
+      do                                                                       \
+      {                                                                        \
+        if (operations != 0) {                                                 \
+          if (--operations == 0) {                                             \
+            STORE_FRAME();                                                     \
+            return WREN_RESULT_MAX_OPERATIONS;                                 \
+          }                                                                    \
+        }                                                                      \
+      } while (false)
+
+  #define CHECK_TIMEOUT() \
+      do \
+      { \
+        if ((timeout != 0) && (time(NULL) - start_time >= timeout)) \
+        { \
+          return WREN_RESULT_TIMEOUT; \
+        } \
+      } while (false);
+
   #if WREN_COMPUTED_GOTO
 
   static void* dispatchTable[] = {
@@ -902,6 +928,8 @@ static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
       do                                                                       \
       {                                                                        \
         DEBUG_TRACE_INSTRUCTIONS();                                            \
+        CHECK_OPERATIONS();                                                    \
+        CHECK_TIMEOUT();                                                       \
         goto *dispatchTable[instruction = (Code)READ_BYTE()];                  \
       } while (false)
 
@@ -910,6 +938,8 @@ static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
   #define INTERPRET_LOOP                                                       \
       loop:                                                                    \
         DEBUG_TRACE_INSTRUCTIONS();                                            \
+        CHECK_OPERATIONS();                                                    \
+        CHECK_TIMEOUT();                                                       \
         switch (instruction = (Code)READ_BYTE())
 
   #define CASE_CODE(name)  case CODE_##name
